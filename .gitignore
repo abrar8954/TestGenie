@@ -1,0 +1,9 @@
+# Ignore build output and directories
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+
+# Ignore environment variables file
+.env
