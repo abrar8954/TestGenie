@@ -19,9 +19,11 @@ export async function generateUnitTestCode(componentCode: string, openFilePath: 
     });
 
     try {
-        console.log("Generating Unit Test Code");
+        console.log("Generating Unit Test Code", openFilePath);
 
-        const userInput = `Generate a complete jest unit tests code for: ${componentCode}. Import path for component for which test is going to be write is related to this: ${openFilePath} and for jest unit tests is this: ${testFilePath} put accordingly in generated jest unit tests code. Import name for this should be same as component. 
+        // const userInput = `Generate a complete jest unit tests code for: ${componentCode}. Import path for component for which test is going to be write is related to this: ${openFilePath} and for jest unit tests is this: ${testFilePath} put accordingly in generated jest unit tests code. Import name for this should be same as component. 
+        // Ensure all imports and exports are correct and consistent across file and also check for .`;
+        const userInput = `Generate a complete jest unit tests code for: ${componentCode}. The import path for the component being tested corresponds to ${openFilePath}, while the path for the Jest unit tests corresponds to ${testFilePath}. Ensure these paths are correctly placed in the generated Jest unit test code. Import name for this should be same as component. 
         Ensure all imports and exports are correct and consistent across file and also check for .`;
         const response = await agent.invoke(
             { messages: [new HumanMessage(userInput)] },

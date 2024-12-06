@@ -30,6 +30,11 @@ export function getWebviewContent(scriptUri: vscode.Uri): string {
   <script>
      const vscode = acquireVsCodeApi();
 
+      // Notify VS Code that the webview is ready then can do initial tasks
+        vscode.postMessage({
+          command: 'ready'
+        });
+
        window.addEventListener('message', event => {
 
          console.log('window.addEventListener');

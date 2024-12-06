@@ -36,7 +36,6 @@ export function Settings() {
     useEffect(() => {
         window.postMessage({
             command: 'callLocallyGetObject',
-            message: settingsData
         }, '*');
     }, []);
 
@@ -45,7 +44,10 @@ export function Settings() {
 
             const message = event.data;
 
-            if (message.command === 'getSettingsData') {
+            if (message.command === 'getSettingsData' && message.settingsData) {
+
+                console.log('message.settingsData: ', message.settingsData);
+
 
                 setSettingsData(message.settingsData);
 

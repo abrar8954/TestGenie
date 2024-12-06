@@ -34,13 +34,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 		messageRecievedFromWebViewHandler(panel, context);
 
-		console.log(projectName, 'projectName');
-
 
 	});
 
 
-	// Register the command to create the test file
 	const disposable_generateUnitTest = vscode.commands.registerCommand('testgenie.generateUnitTest', async () => {
 		unitTestProcess(context, unitTestButton);
 	});

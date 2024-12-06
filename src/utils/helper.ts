@@ -96,6 +96,10 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         const componentCode = editor.document.getText();
         const openFileName = path.basename(openFilePath, path.extname(openFilePath));
         const projectRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        const fileFormat = path.extname(openFilePath).slice(1);
+
+        console.log('openFilePath------------------------------------------------------ ', fileFormat);
+
 
         if (!projectRoot) {
             vscode.window.showErrorMessage("Cannot determine project root.");
@@ -103,7 +107,7 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         }
 
         const testFolderPath = path.join(projectRoot, 'unit_tests');
-        const testFilePath = path.join(testFolderPath, `${openFileName}.test.ts`);
+        const testFilePath = path.join(testFolderPath, `${openFileName}.test.${fileFormat}`);
 
         // Create "unit tests" folder if it doesn't exist
         if (!fs.existsSync(testFolderPath)) {
@@ -130,4 +134,41 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         vscode.window.showTextDocument(document);
         unitTestButton.text = "$(beaker) Create Unit Test";
     }
+}
+
+
+export function getProjectType() {
+    // Get the root folder of the VS Code workspace
+    const projectRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+
+    if (!projectRoot) {
+        vscode.window.showErrorMessage("No workspace folder found!");
+        return;
+    }
+
+    const packageJsonPath = path.join(projectRoot, 'package.json'); // Path to package.json
+
+    // Read the package.json file
+    fs.readFile(packageJsonPath, 'utf-8', (err, data) => {
+        if (err) {
+            vscode.window.showErrorMessage(`Error reading package.json: ${err.message}`);
+            return;
+        }
+
+        try {
+            const packageJson = JSON.parse(data);
+            const testScript = packageJson.scripts && packageJson.scripts.test;
+
+            if (testScript === 'react-scripts test') {
+                // vscode.window.showInformationMessage('CRA');
+                return 'CRA';
+
+            } else {
+                // vscode.window.showInformationMessage('Not Found Project Type');
+                return 'Not Found Project Type';
+            }
+        } catch (parseError: any) {
+            vscode.window.showErrorMessage(`Error parsing package.json: ${parseError.message}`);
+        }
+    });
 }

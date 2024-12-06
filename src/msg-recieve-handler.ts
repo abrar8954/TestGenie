@@ -1,13 +1,27 @@
 
 import * as vscode from 'vscode';
-import { getObjectLocally, storeObjectLocally } from './utils/helper';
+import { getObjectLocally, getProjectType, storeObjectLocally } from './utils/helper';
 import { projectName } from './utils/constants';
 
 export const messageRecievedFromWebViewHandler = (panel: vscode.WebviewPanel, context: vscode.ExtensionContext,) => {
     panel.webview.onDidReceiveMessage(async message => {
         console.log('messageRecievedFromWebViewHandler:', message.command);
 
-        console.log(projectName, 'projectName');
+
+        if (message.command === 'ready') {
+            const projectType: any = getProjectType()
+
+            switch (projectType) {
+                case 'CRA':
+                    vscode.window.showInformationMessage('This is a Create React App (CRA) project.');
+                    break;
+                default:
+                    vscode.window.showInformationMessage('Not Found Project Type');
+                    break;
+            }
+
+
+        }
 
         if (message.command === 'locallyStoreObject') {
 
@@ -38,7 +52,7 @@ export const messageRecievedFromWebViewHandler = (panel: vscode.WebviewPanel, co
 
         if (message.command === 'locallyGetObject') {
 
-            const settingsData = await getObjectLocally(context, projectName);
+            const settingsData = await getObjectLocally(context, `${projectName}_settingsData`);
 
             panel.webview.postMessage({
                 command: 'getSettingsData',
