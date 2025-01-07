@@ -78,17 +78,21 @@ export function getRootProjectPath(): string | undefined {
 
 export const unitTestProcess = async (context: vscode.ExtensionContext, unitTestButton: any) => {
 
-    if (generateUT === 0 || generateUT === 1)
-        generateUT++;
+    try {
+
+        // if (generateUT === 0 || generateUT === 1)
+        //     generateUT++;
 
 
-    if (generateUT === 2) {
+        // if (generateUT === 2) {
         unitTestButton.text = "$(sync~spin) Generating Unit Test...";
-
         const editor = vscode.window.activeTextEditor;
+
 
         if (!editor) {
             vscode.window.showErrorMessage("No active file to create a unit test for.");
+            unitTestButton.text = "$(beaker) Create Unit Test";
+
             return;
         }
 
@@ -97,8 +101,14 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         const openFileName = path.basename(openFilePath, path.extname(openFilePath));
         const projectRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
         const fileFormat = path.extname(openFilePath).slice(1);
+        const projectType: any = await getProjectType()
+        let testFolderPath;
+        let testFilePath;
+        const projectName = getRootProjectName();
+        const settingsData = getObjectLocally(context, `${projectName}_settingsData`);
+        const { apiKey, appStatus } = settingsData;
 
-        console.log('openFilePath------------------------------------------------------ ', fileFormat);
+        console.log('openFilePath--', appStatus);
 
 
         if (!projectRoot) {
@@ -106,18 +116,26 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
             return;
         }
 
-        const testFolderPath = path.join(projectRoot, 'unit_tests');
-        const testFilePath = path.join(testFolderPath, `${openFileName}.test.${fileFormat}`);
+        console.log('projectType ', projectType);
 
-        // Create "unit tests" folder if it doesn't exist
-        if (!fs.existsSync(testFolderPath)) {
-            fs.mkdirSync(testFolderPath);
+        switch (projectType) {
+            case 'CRA':
+                testFolderPath = path.join(projectRoot, 'src/tests/unit_tests');
+                break;
+            default:
+                testFolderPath = path.join(projectRoot, 'tests/unit_tests');
+                break;
         }
 
-        const projectName = getRootProjectName();
-        const settingsData = getObjectLocally(context, `${projectName}_settingsData`);
 
-        const { apiKey } = settingsData;
+        // Create folders if they doesn't exist
+        if (!fs.existsSync(testFolderPath)) {
+            fs.mkdirSync(testFolderPath, { recursive: true });
+
+        }
+
+        testFilePath = path.join(testFolderPath, `${openFileName}.test.${fileFormat}`);
+
 
         const unitTestCode = await generateUnitTestCode(componentCode, openFilePath, testFilePath, apiKey);
 
@@ -133,11 +151,35 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         const document = await vscode.workspace.openTextDocument(testFilePath);
         vscode.window.showTextDocument(document);
         unitTestButton.text = "$(beaker) Create Unit Test";
+
+        if (appStatus === 'Initial') {
+
+            installReqPackages();
+
+            const savedSettingsData = getObjectLocally(context, `${projectName}_settingsData`);
+
+            const updatedSettingsData = {
+                ...savedSettingsData,
+                appStatus: 'Running'
+            };
+
+
+            storeObjectLocally(context, `${projectName}_settingsData`, updatedSettingsData);
+        }
+
+        // }
+
+    } catch (error: any) {
+        unitTestButton.text = "$(beaker) Create Unit Test";
+        vscode.window.showErrorMessage('Something went wrong: ', error);
+
     }
+
+
 }
 
 
-export function getProjectType() {
+export async function getProjectType() {
     // Get the root folder of the VS Code workspace
     const projectRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 
@@ -148,27 +190,35 @@ export function getProjectType() {
 
     const packageJsonPath = path.join(projectRoot, 'package.json'); // Path to package.json
 
-    // Read the package.json file
-    fs.readFile(packageJsonPath, 'utf-8', (err, data) => {
-        if (err) {
-            vscode.window.showErrorMessage(`Error reading package.json: ${err.message}`);
-            return;
+    try {
+        // Use fs.promises to read the file asynchronously
+        const data = await fs.promises.readFile(packageJsonPath, 'utf-8');
+        const packageJson = JSON.parse(data);
+
+
+        const testScript = packageJson.scripts && packageJson.scripts.test;
+
+
+        if (testScript === 'react-scripts test') {
+
+            return 'CRA';
         }
 
-        try {
-            const packageJson = JSON.parse(data);
-            const testScript = packageJson.scripts && packageJson.scripts.test;
+    } catch (err: any) {
+        vscode.window.showErrorMessage(`Error handling package.json: ${err.message}`);
+    }
 
-            if (testScript === 'react-scripts test') {
-                // vscode.window.showInformationMessage('CRA');
-                return 'CRA';
-
-            } else {
-                // vscode.window.showInformationMessage('Not Found Project Type');
-                return 'Not Found Project Type';
-            }
-        } catch (parseError: any) {
-            vscode.window.showErrorMessage(`Error parsing package.json: ${parseError.message}`);
-        }
-    });
+    return 'default'; // Return a default project type if no match is found
 }
+
+
+export const installReqPackages = () => {
+    const terminal: vscode.Terminal = vscode.window.createTerminal('Install Dependencies');
+    terminal.show();
+
+    // Command to be executed
+    const commands = 'npm install --save-dev jest @testing-library/react @testing-library/jest-dom @testing-library/user-event @types/jest';
+
+    // Send the command to the terminal
+    terminal.sendText(commands);
+};

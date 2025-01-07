@@ -9,16 +9,6 @@ export const messageRecievedFromWebViewHandler = (panel: vscode.WebviewPanel, co
 
 
         if (message.command === 'ready') {
-            const projectType: any = getProjectType()
-
-            switch (projectType) {
-                case 'CRA':
-                    vscode.window.showInformationMessage('This is a Create React App (CRA) project.');
-                    break;
-                default:
-                    vscode.window.showInformationMessage('Not Found Project Type');
-                    break;
-            }
 
 
         }
@@ -29,14 +19,16 @@ export const messageRecievedFromWebViewHandler = (panel: vscode.WebviewPanel, co
                 apiProvider,
                 apiKey,
                 customInstructions,
-                approveReadOnly
+                approveReadOnly,
+                appStatus
             } = message.message;
 
             const settingsData = {
                 apiProvider: apiProvider,
                 apiKey: apiKey,
                 customInstructions: customInstructions,
-                approveReadOnly: approveReadOnly
+                approveReadOnly: approveReadOnly,
+                appStatus: appStatus
             }
 
 

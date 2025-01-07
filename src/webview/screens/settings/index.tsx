@@ -8,6 +8,7 @@ export function Settings() {
         apiKey: "", // Store Gemini API key
         customInstructions: "", // Store custom instructions text
         approveReadOnly: false, // Checkbox for approving read-only operations
+        appStatus: 'Initial'
     });
 
     const handleInputChange = (field: keyof typeof settingsData, value: any) => {
