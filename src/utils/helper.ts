@@ -2,8 +2,6 @@ import * as vscode from 'vscode';
 import fs from 'fs';
 import path from 'path';
 import { generateUnitTestCode } from '../agents/generate-unit-tests';
-// import { projectName } from './constants';
-
 
 const workspaceFolders = vscode.workspace.workspaceFolders;
 let generateUT: number = 0;
@@ -101,10 +99,11 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         const openFileName = path.basename(openFilePath, path.extname(openFilePath));
         const projectRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
         const fileFormat = path.extname(openFilePath).slice(1);
-        const projectType: any = await getProjectType()
+        // const projectType: any = await getProjectType()
         let testFolderPath;
         let testFilePath;
         const projectName = getRootProjectName();
+        const projectType = await getProjectType();
         const settingsData = getObjectLocally(context, `${projectName}_settingsData`);
         const { apiKey, appStatus } = settingsData;
 
@@ -116,16 +115,23 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
             return;
         }
 
-        console.log('projectType ', projectType);
+        console.log('projectType ', 'projectType');
 
         switch (projectType) {
             case 'CRA':
                 testFolderPath = path.join(projectRoot, 'src/tests/unit_tests');
                 break;
+            case 'VITEST':
+                testFolderPath = path.join(projectRoot, 'tests/unit_tests');
+                break;
+            case 'REACTNATIVEEXPO':
+                testFolderPath = path.join(projectRoot, 'components/__tests__');
+                break;
             default:
                 testFolderPath = path.join(projectRoot, 'tests/unit_tests');
                 break;
         }
+
 
 
         // Create folders if they doesn't exist
@@ -134,7 +140,16 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
 
         }
 
-        testFilePath = path.join(testFolderPath, `${openFileName}.test.${fileFormat}`);
+        switch (projectType) {
+
+            case 'REACTNATIVEEXPO':
+                testFilePath = path.join(testFolderPath, `${openFileName}-test.${fileFormat}`);
+                break;
+            default:
+                testFilePath = path.join(testFolderPath, `${openFileName}.test.${fileFormat}`);
+                break;
+        }
+
 
 
         const unitTestCode = await generateUnitTestCode(componentCode, openFilePath, testFilePath, apiKey);
@@ -202,13 +217,24 @@ export async function getProjectType() {
         if (testScript === 'react-scripts test') {
 
             return 'CRA';
+
+        } else if (testScript === 'vitest') {
+
+            return 'VITEST';
+
+        } else if (testScript === 'jest --watchAll') {
+
+            return 'REACTNATIVEEXPO';
+
+        } else {
+
+            return 'DEFAULT';
         }
 
     } catch (err: any) {
         vscode.window.showErrorMessage(`Error handling package.json: ${err.message}`);
     }
 
-    return 'default'; // Return a default project type if no match is found
 }
 
 

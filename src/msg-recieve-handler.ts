@@ -1,6 +1,6 @@
 
 import * as vscode from 'vscode';
-import { getObjectLocally, getProjectType, storeObjectLocally } from './utils/helper';
+import { getObjectLocally, storeObjectLocally } from './utils/helper';
 import { projectName } from './utils/constants';
 
 export const messageRecievedFromWebViewHandler = (panel: vscode.WebviewPanel, context: vscode.ExtensionContext,) => {
