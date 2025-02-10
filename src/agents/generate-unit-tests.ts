@@ -28,7 +28,9 @@ export async function generateUnitTestCode(componentCode: string, openFilePath: 
         // const userInput = `Generate a complete jest unit tests code for: ${componentCode}. The import path for the component being tested corresponds to ${openFilePath}, while the path for the Jest unit tests corresponds to ${testFilePath}. Ensure these paths are correctly placed in the generated Jest unit test code. Import name for this should be same as component. 
         // Ensure all imports and exports are correct and consistent across file and also check for .This import '@testing-library/jest-dom'; should be on top of other imports.`;  
         const projectType: any = await getProjectType();
-        const userInput = selectPrompts(componentCode, openFilePath, testFilePath, projectType)
+        console.log(projectType, ': projectType - generateUnitTestCode');
+        
+        const userInput = selectPrompts(componentCode, openFilePath, testFilePath, projectType);
         const response = await agent.invoke(
             { messages: [new HumanMessage(userInput)] },
             { configurable: { thread_id: "1" } }

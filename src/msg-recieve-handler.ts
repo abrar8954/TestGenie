@@ -54,7 +54,6 @@ export const messageRecievedFromWebViewHandler = (panel: vscode.WebviewPanel, co
 
         }
 
-
     });
 
 }

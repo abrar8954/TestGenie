@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import fs from 'fs';
 import path from 'path';
 import { generateUnitTestCode } from '../agents/generate-unit-tests';
+import { selectInstallCommands } from './commands';
 
 const workspaceFolders = vscode.workspace.workspaceFolders;
 let generateUT: number = 0;
@@ -33,12 +34,13 @@ export const getObjectLocally = (context: vscode.ExtensionContext, key: string) 
 };
 
 
-export function getRootProjectName(): string | undefined {
+export async function getRootProjectName(): Promise<string | undefined> {
+    await vscode.workspace.fs.stat(vscode.Uri.file(vscode.workspace.rootPath || ''));
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+
     if (workspaceFolders && workspaceFolders.length > 0) {
-        // Return the name of the first workspace folder, typically the root project folder name
         return workspaceFolders[0].name;
     } else {
-        // No workspace folder is open
         return undefined;
     }
 }
@@ -102,7 +104,7 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         // const projectType: any = await getProjectType()
         let testFolderPath;
         let testFilePath;
-        const projectName = getRootProjectName();
+        const projectName = await getRootProjectName();
         const projectType = await getProjectType();
         const settingsData = getObjectLocally(context, `${projectName}_settingsData`);
         const { apiKey, appStatus } = settingsData;
@@ -126,6 +128,10 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
                 break;
             case 'REACTNATIVEEXPO':
                 testFolderPath = path.join(projectRoot, 'components/__tests__');
+                break;
+            case 'REACTNATIVECLI':
+            case 'NEXTJS':
+                testFolderPath = path.join(projectRoot, '__tests__');
                 break;
             default:
                 testFolderPath = path.join(projectRoot, 'tests/unit_tests');
@@ -167,9 +173,10 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
         vscode.window.showTextDocument(document);
         unitTestButton.text = "$(beaker) Create Unit Test";
 
+        installReqPackages();
+
         if (appStatus === 'Initial') {
 
-            installReqPackages();
 
             const savedSettingsData = getObjectLocally(context, `${projectName}_settingsData`);
 
@@ -186,7 +193,8 @@ export const unitTestProcess = async (context: vscode.ExtensionContext, unitTest
 
     } catch (error: any) {
         unitTestButton.text = "$(beaker) Create Unit Test";
-        vscode.window.showErrorMessage('Something went wrong: ', error);
+        vscode.window.showErrorMessage(`Something went wrong: ${error.message || error}`);
+        console.error("Error details:", error);
 
     }
 
@@ -212,6 +220,9 @@ export async function getProjectType() {
 
 
         const testScript = packageJson.scripts && packageJson.scripts.test;
+        const startScript = packageJson.scripts && packageJson.scripts.start;
+        console.log(testScript, 'and', startScript);
+
 
 
         if (testScript === 'react-scripts test') {
@@ -226,6 +237,14 @@ export async function getProjectType() {
 
             return 'REACTNATIVEEXPO';
 
+        } else if (testScript === 'jest' && !(startScript === 'next start')) {
+
+            return 'REACTNATIVECLI';
+
+        } else if (testScript === 'jest' && startScript === 'next start') {
+
+            return 'NEXTJS';
+
         } else {
 
             return 'DEFAULT';
@@ -238,13 +257,14 @@ export async function getProjectType() {
 }
 
 
-export const installReqPackages = () => {
+export const installReqPackages = async () => {
+    const projectType: any = await getProjectType();
     const terminal: vscode.Terminal = vscode.window.createTerminal('Install Dependencies');
     terminal.show();
 
     // Command to be executed
-    const commands = 'npm install --save-dev jest @testing-library/react @testing-library/jest-dom @testing-library/user-event @types/jest';
+    const command = selectInstallCommands()
 
     // Send the command to the terminal
-    terminal.sendText(commands);
+    terminal.sendText(command);
 };
